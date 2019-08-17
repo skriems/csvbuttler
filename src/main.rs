@@ -9,6 +9,11 @@ use actix_web::{middleware, web, App, HttpServer};
 use env_logger;
 use listenfd::ListenFd;
 
+fn build_server_str(state: &data::StateType) -> String {
+    let cfg = &state.lock().unwrap().cfg;
+    format!("{}:{}", &cfg.interface, &cfg.port)
+}
+
 fn run() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "actix_web=trace");
     env::set_var("RUST_BACKTRACE", "1"); // TODO set in dev
@@ -17,6 +22,8 @@ fn run() -> std::io::Result<()> {
     let log_fmt = "%a '%r' %s %b '%{Referer}i' '%{User-Agent}i' %D";
 
     let state = data::AppState::new()?;
+
+    let server_str = build_server_str(&state);
 
     let mut listenfd = ListenFd::from_env();
     let mut server = HttpServer::new(move || {
@@ -36,7 +43,8 @@ fn run() -> std::io::Result<()> {
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
         server.listen(l)?
     } else {
-        server.bind("0.0.0.0:8000")?
+        println!("Listening on {}", &server_str);
+        server.bind(server_str)?
     };
 
     server.run()

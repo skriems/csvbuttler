@@ -2,12 +2,12 @@ use std::collections::HashMap;
 use std::io;
 use std::sync::{Arc, Mutex};
 
-use crate::config::{Config, get_config};
+use crate::config::{get_config, Config};
 use crate::error;
 use crate::model::{error_product, Product};
 
 /// type alias for `AppState`
-type StateType = Arc<Mutex<AppState>>;
+pub type StateType = Arc<Mutex<AppState>>;
 
 #[derive(Debug)]
 pub struct AppState {

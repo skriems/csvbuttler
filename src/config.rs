@@ -9,12 +9,22 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "csvbuttler", about = "serves data from csv files")]
 pub struct Config {
+
     /// csv file
     #[structopt(name = "file", short, long)]
     pub file: Option<String>,
+
     /// delimiter
     #[structopt(short = "-d", long = "--delimiter", default_value = ",")]
     pub delimiter: String,
+
+    /// interface
+    #[structopt(name = "interface", short, long, default_value = "127.0.0.1")]
+    pub interface: String,
+
+    /// port
+    #[structopt(name = "port", short, long, default_value = "8000")]
+    pub port: String,
 }
 
 impl Config {

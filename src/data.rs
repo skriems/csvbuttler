@@ -18,17 +18,18 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Result<StateType, error::Error> {
         let cfg = config::get_config()?;
-        let map = read_data()?;
+        let map = read_data(&cfg)?;
 
         Ok(Arc::new(Mutex::new(AppState { cfg, map })))
     }
 }
 
-pub fn read_data() -> io::Result<HashMap<usize, Product>> {
+pub fn read_data(cfg: &config::Config) -> io::Result<HashMap<usize, Product>> {
     let mut map = HashMap::new();
 
     let mut rdr = csv::ReaderBuilder::new()
-        .delimiter(b';')
+        // TODO this can panic if an empty string is provided as delimiter
+        .delimiter(cfg.delimiter.clone().into_bytes()[0])
         .from_path("./feed.csv")?;
 
     for result in rdr.deserialize() {

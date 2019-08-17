@@ -17,7 +17,6 @@ fn run() -> std::io::Result<()> {
     env_logger::init();
 
     let cfg = config::get_config()?;
-    println!("{:?}", cfg);
 
     let log_fmt = "%a '%r' %s %b '%{Referer}i' '%{User-Agent}i' %D";
 

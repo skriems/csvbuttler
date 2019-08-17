@@ -1,5 +1,5 @@
 use std::env;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::error::Error;
 
@@ -9,26 +9,35 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "csvbuttler", about = "serves data from csv files")]
 pub struct Config {
-    /// fetch CSV from URL
-    #[structopt(long = "--url")]
-    pub url: Option<String>,
-    /// use a local csv file
-    #[structopt(short = "-f", long = "--from-file", parse(from_os_str))]
-    pub file: Option<PathBuf>,
+    /// csv file
+    #[structopt(name = "file", short, long)]
+    pub file: Option<String>,
     /// delimiter
-    #[structopt(short = "-d", long = "--delimiter")]
-    pub delimiter: Option<String>,
+    #[structopt(short = "-d", long = "--delimiter", default_value = ",")]
+    pub delimiter: String,
+}
+
+impl Config {
+    fn is_local(&self) -> bool {
+        if let Some(f) = &self.file {
+            Path::new(f).exists()
+        } else {
+            false
+        }
+    }
 }
 
 pub fn get_config() -> Result<Config, Error> {
     dotenv::dotenv().ok();
     let mut cfg = Config::from_args();
 
-    let url = match cfg.url {
-        Some(url) => url,
-        None => env::var("CSV_URL")?,
-    };
+    if let Some(uri) = cfg.file {
+        cfg.file = Some(uri);
+    } else {
+        let uri = env::var("CSV_URL")?;
+        cfg.file = Some(uri);
+    }
 
-    cfg.url = Some(url.to_owned());
+    println!("Starting csvbuttler with {:?}", cfg);
     Ok(cfg)
 }

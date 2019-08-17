@@ -1,8 +1,6 @@
 use std::env;
 use std::process;
-use std::sync::{Arc, Mutex};
 
-use csvbuttler::config;
 use csvbuttler::data;
 use csvbuttler::handler;
 use csvbuttler::routes;
@@ -16,12 +14,9 @@ fn run() -> std::io::Result<()> {
     env::set_var("RUST_BACKTRACE", "1"); // TODO set in dev
     env_logger::init();
 
-    let cfg = config::get_config()?;
-
     let log_fmt = "%a '%r' %s %b '%{Referer}i' '%{User-Agent}i' %D";
 
-    let map = data::read_data()?;
-    let state = Arc::new(Mutex::new(data::AppState::from_map(map)));
+    let state = data::AppState::new()?;
 
     let mut listenfd = ListenFd::from_env();
     let mut server = HttpServer::new(move || {

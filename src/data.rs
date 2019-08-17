@@ -1,16 +1,26 @@
 use std::collections::HashMap;
 use std::io;
+use std::sync::{Arc, Mutex};
 
+use crate::config;
+use crate::error;
 use crate::model::{error_product, Product};
+
+/// type alias for `AppState`
+type StateType = Arc<Mutex<AppState>>;
 
 #[derive(Debug)]
 pub struct AppState {
+    pub cfg: config::Config,
     pub map: HashMap<usize, Product>,
 }
 
 impl AppState {
-    pub fn from_map(map: HashMap<usize, Product>) -> Self {
-        AppState { map }
+    pub fn new() -> Result<StateType, error::Error> {
+        let cfg = config::get_config()?;
+        let map = read_data()?;
+
+        Ok(Arc::new(Mutex::new(AppState { cfg, map })))
     }
 }
 

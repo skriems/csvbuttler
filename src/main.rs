@@ -1,20 +1,22 @@
 use std::env;
 use std::sync::{Arc, Mutex};
 
+use csvbuttler::config;
 use csvbuttler::data;
 use csvbuttler::handler;
 use csvbuttler::routes;
 
 use actix_web::{middleware, web, App, HttpServer};
-use dotenv;
 use env_logger;
 use listenfd::ListenFd;
 
 fn main() -> std::io::Result<()> {
-    dotenv::dotenv().ok();
     env::set_var("RUST_LOG", "actix_web=trace");
     env::set_var("RUST_BACKTRACE", "1"); // TODO set in dev
     env_logger::init();
+
+    let cfg = config::get_config();
+    println!("{:?}", cfg);
 
     let log_fmt = "%a '%r' %s %b '%{Referer}i' '%{User-Agent}i' %D";
 

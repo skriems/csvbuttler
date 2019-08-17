@@ -30,6 +30,13 @@ impl From<std::env::VarError> for Error {
     }
 }
 
+/// convert a `std::io:Error` to an `error::Error`
+impl From<std::io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error
+    }
+}
+
 /// convert an `crate::error::Error` to an `std::io::Error`
 impl From<Error> for io::Error {
     fn from(err: Error) -> io::Error {

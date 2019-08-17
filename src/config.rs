@@ -28,7 +28,7 @@ pub struct Config {
 }
 
 impl Config {
-    fn is_local(&self) -> bool {
+    pub fn is_local(&self) -> bool {
         if let Some(f) = &self.file {
             Path::new(f).exists()
         } else {

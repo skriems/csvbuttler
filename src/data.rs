@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io;
 use std::sync::{Arc, Mutex};
 
-use crate::config;
+use crate::config::{Config, get_config};
 use crate::error;
 use crate::model::{error_product, Product};
 
@@ -11,20 +11,20 @@ type StateType = Arc<Mutex<AppState>>;
 
 #[derive(Debug)]
 pub struct AppState {
-    pub cfg: config::Config,
+    pub cfg: Config,
     pub map: HashMap<usize, Product>,
 }
 
 impl AppState {
     pub fn new() -> Result<StateType, error::Error> {
-        let cfg = config::get_config()?;
+        let cfg = get_config()?;
         let map = read_data(&cfg)?;
 
         Ok(Arc::new(Mutex::new(AppState { cfg, map })))
     }
 }
 
-pub fn read_data(cfg: &config::Config) -> io::Result<HashMap<usize, Product>> {
+pub fn read_data(cfg: &Config) -> io::Result<HashMap<usize, Product>> {
     let mut map = HashMap::new();
 
     let mut rdr = csv::ReaderBuilder::new()

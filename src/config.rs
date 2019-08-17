@@ -1,6 +1,7 @@
 use std::env;
-use std::error;
 use std::path::PathBuf;
+
+use crate::error::Error;
 
 use dotenv;
 use structopt::StructOpt;
@@ -19,13 +20,13 @@ pub struct Config {
     pub delimiter: Option<String>,
 }
 
-pub fn get_config() -> Result<Config, Box<dyn error::Error>> {
+pub fn get_config() -> Result<Config, Error> {
     dotenv::dotenv().ok();
     let mut cfg = Config::from_args();
 
     let url = match cfg.url {
         Some(url) => url,
-        None => env::var("CSV_URL").expect("No csv data to serve"),
+        None => env::var("CSV_URL")?,
     };
 
     cfg.url = Some(url.to_owned());

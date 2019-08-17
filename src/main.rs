@@ -1,4 +1,5 @@
 use std::env;
+use std::process;
 use std::sync::{Arc, Mutex};
 
 use csvbuttler::config;
@@ -10,12 +11,12 @@ use actix_web::{middleware, web, App, HttpServer};
 use env_logger;
 use listenfd::ListenFd;
 
-fn main() -> std::io::Result<()> {
+fn run() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "actix_web=trace");
     env::set_var("RUST_BACKTRACE", "1"); // TODO set in dev
     env_logger::init();
 
-    let cfg = config::get_config();
+    let cfg = config::get_config()?;
     println!("{:?}", cfg);
 
     let log_fmt = "%a '%r' %s %b '%{Referer}i' '%{User-Agent}i' %D";
@@ -45,4 +46,11 @@ fn main() -> std::io::Result<()> {
     };
 
     server.run()
+}
+
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("Error: {}", e);
+        process::exit(1);
+    }
 }

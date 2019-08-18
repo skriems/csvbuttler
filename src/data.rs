@@ -8,11 +8,12 @@ use crate::config::{get_config, Config};
 use crate::error;
 use crate::model::{error_product, Product};
 
-/// type alias for `AppState`
-pub type StateType = Arc<Mutex<AppState>>;
 use actix_rt::System;
 use actix_web::client::Client;
 use futures::future::{lazy, Future};
+
+/// type alias for `AppState`
+pub type StateType = Arc<Mutex<AppState>>;
 
 #[derive(Debug)]
 pub struct AppState {

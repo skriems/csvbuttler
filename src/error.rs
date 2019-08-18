@@ -1,6 +1,8 @@
 use std::error;
 use std::{fmt, io, result};
 
+use reqwest;
+
 pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
@@ -32,7 +34,14 @@ impl From<std::env::VarError> for Error {
 
 /// convert a `std::io:Error` to an `error::Error`
 impl From<std::io::Error> for Error {
-    fn from(err: io::Error) -> Error {
+    fn from(_err: io::Error) -> Error {
+        Error
+    }
+}
+
+/// convert a `reqwest::error:Error` to an `error::Error`
+impl From<reqwest::Error> for Error {
+    fn from(_err: reqwest::Error) -> Error {
         Error
     }
 }

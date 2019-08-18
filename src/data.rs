@@ -54,17 +54,17 @@ pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Produc
     let mut map = HashMap::new();
 
     let mut rdr = csv::ReaderBuilder::new()
-        // TODO this can panic if an empty string is provided as delimiter
+        // FIXME this can panic if an empty string is provided as delimiter
         .delimiter(cfg.delimiter.clone().into_bytes()[0])
         .from_reader(data.as_bytes());
 
     for result in rdr.deserialize() {
-        // Notice that we need to provide a type hint for automatic deserialization.  And by
-        // needing to do that, we seem to have no idiomatic way of skipping bogus lines :( Hence
-        // we print out the error here for now and return a dummy Product that is used to continue
-        // the loop
+        // Notice that we need to provide a type hint for automatic deserialization. And by
+        // needing to do that, we seem to have no idiomatic way of skipping bogus lines :(
+        // Hence we print out the error here for now and return a dummy Product that is used to
+        // continue the loop
         let record: Product = result.unwrap_or_else(|e| {
-            println!("{}", e);
+            eprintln!("{}", e);
             error_product()
         });
         if record.id == 0 {

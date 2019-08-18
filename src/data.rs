@@ -8,9 +8,7 @@ use crate::config::{get_config, Config};
 use crate::error;
 use crate::model::{error_product, Product};
 
-use actix_rt::System;
-use actix_web::client::Client;
-use futures::future::{lazy, Future};
+use reqwest;
 
 /// type alias for `AppState`
 pub type StateType = Arc<Mutex<AppState>>;
@@ -77,22 +75,8 @@ pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Produc
 }
 
 pub fn fetch_data(url: &str) -> Result<String, error::Error> {
-    System::new("test").block_on(lazy(|| {
-        println!("Fetching {}", &url);
-        let client = Client::default();
-        client
-            .get(url) // <- Create request builder
-            .header("User-Agent", "Actix-web")
-            .send() // <- Send http request
-            .map_err(|_| error::Error)
-            .and_then(|mut res| {
-                res.body()
-                    .and_then(move |bytes| {
-                        let s = std::str::from_utf8(&bytes).expect("utf8 parse error)");
-                        Ok(s.to_owned())
-                    })
-                    .map_err(|_| error::Error)
-            })
-            .map_err(|_| error::Error)
-    }))
+    println!("Fetching data from {}", &url);
+    let body = reqwest::get(url)?
+        .text()?;
+    Ok(body)
 }

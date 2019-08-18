@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::sync::{Arc, Mutex};
 
 use crate::config::{get_config, Config};
-use crate::error;
+use crate::error::{Error, ErrorKind};
 use crate::model::{error_product, Product};
 
 use reqwest;
@@ -20,7 +20,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new() -> Result<StateType, error::Error> {
+    pub fn new() -> Result<StateType, Error> {
         let cfg = get_config()?;
         let csv = get_csv(&cfg)?;
         let map = parse_csv(&cfg, csv)?;
@@ -29,7 +29,7 @@ impl AppState {
     }
 }
 
-fn get_csv(cfg: &Config) -> Result<String, error::Error> {
+fn get_csv(cfg: &Config) -> Result<String, Error> {
     if cfg.is_local() {
         if let Some(filename) = &cfg.file {
             let mut file = File::open(filename)?;
@@ -37,14 +37,14 @@ fn get_csv(cfg: &Config) -> Result<String, error::Error> {
             file.read_to_string(&mut s)?;
             Ok(s)
         } else {
-            Err(error::Error)
+            Err(From::from(ErrorKind::Other("No file?".into())))
         }
     } else {
         if let Some(url) = &cfg.file {
             let data = fetch_data(url)?;
             Ok(data)
         } else {
-            Err(error::Error)
+            Err(From::from(ErrorKind::Other("No URL?".into())))
         }
     }
 }
@@ -74,9 +74,8 @@ pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Produc
     Ok(map)
 }
 
-pub fn fetch_data(url: &str) -> Result<String, error::Error> {
+pub fn fetch_data(url: &str) -> Result<String, Error> {
     println!("Fetching data from {}", &url);
-    let body = reqwest::get(url)?
-        .text()?;
+    let body = reqwest::get(url)?.text()?;
     Ok(body)
 }

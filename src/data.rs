@@ -23,13 +23,14 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Result<StateType, error::Error> {
         let cfg = get_config()?;
-        let map = read_data(&cfg)?;
+        let csv = get_csv(&cfg)?;
+        let map = parse_csv(&cfg, csv)?;
 
         Ok(Arc::new(Mutex::new(AppState { cfg, map })))
     }
 }
 
-fn read_csv(cfg: &Config) -> Result<String, error::Error> {
+fn get_csv(cfg: &Config) -> Result<String, error::Error> {
     if cfg.is_local() {
         if let Some(filename) = &cfg.file {
             let mut file = File::open(filename)?;
@@ -49,10 +50,8 @@ fn read_csv(cfg: &Config) -> Result<String, error::Error> {
     }
 }
 
-pub fn read_data(cfg: &Config) -> io::Result<HashMap<usize, Product>> {
+pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Product>> {
     let mut map = HashMap::new();
-
-    let data = read_csv(&cfg)?;
 
     let mut rdr = csv::ReaderBuilder::new()
         // TODO this can panic if an empty string is provided as delimiter

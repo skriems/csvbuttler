@@ -14,11 +14,16 @@ use reqwest;
 pub type StateType = Arc<Mutex<AppState>>;
 
 #[derive(Debug)]
+/// The `AppState` is constructed with the app configuration and the generated `HashMap` from the
+/// csv data.
 pub struct AppState {
     pub cfg: Config,
     pub map: HashMap<usize, Product>,
 }
 
+/// `AppState` implements a `new` function for convenience.
+/// Note that this should only be done once. Subsequent updates to the `map` should be done via
+/// mutable references to the `Mutex` inside of the `Arc`.
 impl AppState {
     pub fn new() -> Result<StateType, Error> {
         let cfg = get_config()?;
@@ -29,6 +34,7 @@ impl AppState {
     }
 }
 
+/// Retrieve the csv either from a local file, or try to fetch it, from an external service
 fn get_csv(cfg: &Config) -> Result<String, Error> {
     if cfg.is_local() {
         if let Some(filename) = &cfg.file {
@@ -49,6 +55,7 @@ fn get_csv(cfg: &Config) -> Result<String, Error> {
     }
 }
 
+/// Parse the csv, deserializing it with `serde` based on the `Product` struct
 pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Product>> {
     let mut map = HashMap::new();
 
@@ -74,6 +81,7 @@ pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Produc
     Ok(map)
 }
 
+/// Fetch csv data from an external service and return it as a `String`
 pub fn fetch_data(url: &str) -> Result<String, Error> {
     println!("Fetching data from {}", &url);
     let body = reqwest::get(url)?.text()?;

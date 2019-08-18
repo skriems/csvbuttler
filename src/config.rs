@@ -9,7 +9,6 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "csvbuttler", about = "serves data from csv files")]
 pub struct Config {
-
     /// csv file
     #[structopt(name = "file", short, long)]
     pub file: Option<String>,
@@ -37,6 +36,8 @@ impl Config {
     }
 }
 
+/// Utility function which populates environment variables via `dotenv` and merges them into the
+/// `Config` struct
 pub fn get_config() -> Result<Config, Error> {
     dotenv::dotenv().ok();
     let mut cfg = Config::from_args();

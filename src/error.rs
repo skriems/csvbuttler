@@ -1,3 +1,8 @@
+//! Module holding a custom Error in order to handle the various errors we may be facing with ease
+//!
+//! This is very much inspired by `https://github.com/BurntSushi/rust-csv/blob/master/src/error.rs`
+//! and the `error::Error` module (not to say copy pasted :grin:)
+
 use std::{fmt, io, result};
 
 use reqwest;
@@ -17,6 +22,8 @@ impl Error {
     }
 }
 
+/// The implementation of the `fmt::Display` trait, basically passing through the implementations
+/// of the underlying Errors
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
@@ -36,6 +43,7 @@ pub enum ErrorKind {
     Other(String),
 }
 
+/// Convert an `ErrorKind` to an `Error`
 impl From<ErrorKind> for Error {
     fn from(kind: ErrorKind) -> Error {
         Error::new(kind)
@@ -58,35 +66,35 @@ impl std::error::Error for Error {
     }
 }
 
-/// convert a `std::env:VarError` to an `error::Error`
+/// Convert a `std::env:VarError` to an `error::Error`
 impl From<std::env::VarError> for Error {
     fn from(err: std::env::VarError) -> Error {
         Error::new(ErrorKind::VarError(err))
     }
 }
 
-/// convert a `std::io:Error` to an `error::Error`
+/// Convert a `std::io:Error` to an `error::Error`
 impl From<std::io::Error> for Error {
     fn from(err: io::Error) -> Error {
         Error::new(ErrorKind::Io(err))
     }
 }
 
-/// convert a `reqwest::error:Error` to an `error::Error`
+/// Convert a `reqwest::error:Error` to an `error::Error`
 impl From<reqwest::Error> for Error {
     fn from(err: reqwest::Error) -> Error {
         Error::new(ErrorKind::Reqwest(err))
     }
 }
 
-/// convert an `crate::error::Error` to an `std::io::Error`
+/// Convert an `crate::error::Error` to an `std::io::Error`
 impl From<Error> for io::Error {
     fn from(err: Error) -> io::Error {
         io::Error::new(io::ErrorKind::Other, err)
     }
 }
 
-/// convert a `String` to an `error::Error`
+/// Convert a `String` to an `error::Error`
 impl From<String> for Error {
     fn from(err: String) -> Error {
         Error::new(ErrorKind::Other(err))

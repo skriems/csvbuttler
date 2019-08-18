@@ -9,6 +9,8 @@ use actix_web::{middleware, web, App, HttpServer};
 use env_logger;
 use listenfd::ListenFd;
 
+/// Utility funciton to build the server string based on the cli arguments.
+/// Defaults to: 127.0.0.1:8000
 fn build_server_str(state: &data::StateType) -> String {
     let cfg = &state.lock().unwrap().cfg;
     format!("{}:{}", &cfg.interface, &cfg.port)

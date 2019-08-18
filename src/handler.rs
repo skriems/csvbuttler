@@ -5,11 +5,13 @@ use std::sync::{Arc, Mutex};
 
 use crate::data;
 
+/// Dummy root handler
 pub fn index() -> impl Responder {
     let rust = env::var("RUST").unwrap_or("env var not set".to_string());
     HttpResponse::Ok().body(format!("Rust {}", rust))
 }
 
+/// Asynchronous product handler
 pub fn product(
     path: web::Path<(usize,)>,
     data: web::Data<Arc<Mutex<data::AppState>>>,

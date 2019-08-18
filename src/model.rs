@@ -1,3 +1,5 @@
+//! Module holding the model that is used to deserialize rows
+
 use actix_web::{Error, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json;

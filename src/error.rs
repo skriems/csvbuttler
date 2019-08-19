@@ -1,7 +1,9 @@
 //! Module holding a custom Error in order to handle the various errors we may be facing with ease
 //!
 //! This is very much inspired by `https://github.com/BurntSushi/rust-csv/blob/master/src/error.rs`
-//! and the `error::Error` module (not to say copy pasted :grin:)
+//! and `https://doc.rust-lang.org/rust-by-example/error/multiple_error_types/wrap_error.html`
+//!
+//! (not to say copy pasted :grin:)
 
 use std::{fmt, io, result};
 
@@ -27,10 +29,10 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
-            ErrorKind::Io(ref err) => err.fmt(f),
-            ErrorKind::VarError(ref err) => err.fmt(f),
-            ErrorKind::Reqwest(ref err) => err.fmt(f),
-            ErrorKind::Other(ref err) => err.fmt(f),
+            ErrorKind::Io(ref e) => e.fmt(f),
+            ErrorKind::VarError(ref e) => e.fmt(f),
+            ErrorKind::Reqwest(ref e) => e.fmt(f),
+            ErrorKind::Other(ref e) => e.fmt(f),
         }
     }
 }
@@ -51,12 +53,21 @@ impl From<ErrorKind> for Error {
 }
 
 impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match *self.0 {
+            ErrorKind::Io(ref e) => Some(e),
+            ErrorKind::VarError(ref e) => Some(e),
+            ErrorKind::Reqwest(ref e) => Some(e),
+            ErrorKind::Other(ref _str) => None,
+        }
+    }
+
     fn description(&self) -> &str {
         match *self.0 {
-            ErrorKind::Io(ref err) => err.description(),
-            ErrorKind::VarError(ref err) => err.description(),
-            ErrorKind::Reqwest(ref err) => err.description(),
-            ErrorKind::Other(ref err) => &err,
+            ErrorKind::Io(ref e) => e.description(),
+            ErrorKind::VarError(ref e) => e.description(),
+            ErrorKind::Reqwest(ref e) => e.description(),
+            ErrorKind::Other(ref e) => &e,
         }
     }
 
@@ -66,37 +77,38 @@ impl std::error::Error for Error {
     }
 }
 
-/// Convert a `std::env:VarError` to an `error::Error`
+/// Convert a `std::env:VarError` to an `Error`
 impl From<std::env::VarError> for Error {
-    fn from(err: std::env::VarError) -> Error {
-        Error::new(ErrorKind::VarError(err))
+    fn from(e: std::env::VarError) -> Error {
+        Error::new(ErrorKind::VarError(e))
     }
 }
 
-/// Convert a `std::io:Error` to an `error::Error`
+/// Convert a `std::io:Error` to an `Error`
 impl From<std::io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        Error::new(ErrorKind::Io(err))
+    fn from(e: io::Error) -> Error {
+        Error::new(ErrorKind::Io(e))
     }
 }
 
-/// Convert a `reqwest::error:Error` to an `error::Error`
+/// Convert a `reqwest::Error` to an `Error`
 impl From<reqwest::Error> for Error {
-    fn from(err: reqwest::Error) -> Error {
-        Error::new(ErrorKind::Reqwest(err))
+    fn from(e: reqwest::Error) -> Error {
+        Error::new(ErrorKind::Reqwest(e))
     }
 }
 
-/// Convert an `crate::error::Error` to an `std::io::Error`
-impl From<Error> for io::Error {
-    fn from(err: Error) -> io::Error {
-        io::Error::new(io::ErrorKind::Other, err)
-    }
-}
-
-/// Convert a `String` to an `error::Error`
+/// Convert a `String` to an `Error`
 impl From<String> for Error {
-    fn from(err: String) -> Error {
-        Error::new(ErrorKind::Other(err))
+    fn from(e: String) -> Error {
+        Error::new(ErrorKind::Other(e))
     }
 }
+
+/// Convert an `Error` to an `std::io::Error`
+impl From<Error> for io::Error {
+    fn from(e: Error) -> io::Error {
+        io::Error::new(io::ErrorKind::Other, e)
+    }
+}
+

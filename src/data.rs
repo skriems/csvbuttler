@@ -27,6 +27,7 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Result<StateType, Error> {
         let cfg = get_config()?;
+        println!("{:?}", &cfg);
         let csv = get_csv(&cfg)?;
         let map = parse_csv(&cfg, csv)?;
 

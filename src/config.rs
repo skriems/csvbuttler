@@ -9,7 +9,7 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "csvbuttler", about = "serves data from csv files")]
 pub struct Config {
-    /// csv file
+    /// csv file (local or URL)
     #[structopt(name = "file", short, long)]
     pub file: Option<String>,
 
@@ -24,6 +24,10 @@ pub struct Config {
     /// port
     #[structopt(name = "port", short, long, default_value = "8000")]
     pub port: String,
+
+    /// Access-Control-Allow-Origin Header
+    #[structopt(name = "allow-origin", short = "-o", long)]
+    pub allow_origin: Option<String>,
 }
 
 impl Config {
@@ -49,6 +53,14 @@ pub fn get_config() -> Result<Config, Error> {
         cfg.file = Some(uri);
     }
 
-    println!("Starting csvbuttler with {:?}", cfg);
+    // If no allowed origin is specified via cli, we try to get it from env.
+    // Otherwise, set it to None
+    if cfg.allow_origin.is_none() {
+        let allowed_origin = match env::var("CORS_ALLOW_ORIGIN") {
+            Ok(origin) => Some(origin),
+            Err(_) => None,
+        };
+        cfg.allow_origin = allowed_origin;
+    }
     Ok(cfg)
 }

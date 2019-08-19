@@ -46,15 +46,14 @@ pub fn get_config() -> Result<Config, Error> {
     dotenv::dotenv().ok();
     let mut cfg = Config::from_args();
 
-    if let Some(uri) = cfg.file {
-        cfg.file = Some(uri);
-    } else {
+    if cfg.file.is_none() {
+        // we need either a file or a URL so fail here, if we got neither
         let uri = env::var("CSV_URL")?;
         cfg.file = Some(uri);
     }
 
     // If no allowed origin is specified via cli, we try to get it from env.
-    // Otherwise, set it to None
+    // Otherwise, set it to None - no need to fail here
     if cfg.allow_origin.is_none() {
         let allowed_origin = match env::var("CORS_ALLOW_ORIGIN") {
             Ok(origin) => Some(origin),

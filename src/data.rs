@@ -48,7 +48,7 @@ fn get_csv(cfg: &Config) -> Result<String, Error> {
         }
     } else {
         if let Some(url) = &cfg.file {
-            let data = fetch_data(url)?;
+            let data = fetch_data(url, &cfg)?;
             Ok(data)
         } else {
             Err(From::from(ErrorKind::Other("No URL?".into())))
@@ -83,8 +83,25 @@ pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Produc
 }
 
 /// Fetch csv data from an external service and return it as a `String`
-pub fn fetch_data(url: &str) -> Result<String, Error> {
+pub fn fetch_data(url: &str, cfg: &Config) -> Result<String, Error> {
     println!("Fetching data from {}", &url);
-    let body = reqwest::get(url)?.text()?;
-    Ok(body)
+    let client = match &cfg.csv_username {
+        Some(username) => {
+            if let Some(password) = &cfg.csv_password {
+                reqwest::Client::new()
+                    .get(url)
+                    .basic_auth(username, Some(password))
+            } else {
+                return Err(From::from(ErrorKind::Other(
+                    "Need password for Basic Auth".into(),
+                )));
+            }
+        },
+        None => reqwest::Client::new()
+            .get(url)
+    };
+    let resp = client
+        .send()?
+        .text()?;
+    Ok(resp)
 }

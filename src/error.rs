@@ -14,6 +14,14 @@ pub type Result<T> = result::Result<T, Error>;
 #[derive(Debug)]
 pub struct Error(Box<ErrorKind>);
 
+#[derive(Debug)]
+pub enum ErrorKind {
+    Io(io::Error),
+    VarError(std::env::VarError),
+    Reqwest(reqwest::Error),
+    Other(String),
+}
+
 impl Error {
     pub(crate) fn new(kind: ErrorKind) -> Self {
         Error(Box::new(kind))
@@ -35,14 +43,6 @@ impl fmt::Display for Error {
             ErrorKind::Other(ref e) => e.fmt(f),
         }
     }
-}
-
-#[derive(Debug)]
-pub enum ErrorKind {
-    Io(io::Error),
-    VarError(std::env::VarError),
-    Reqwest(reqwest::Error),
-    Other(String),
 }
 
 /// Convert an `ErrorKind` to an `Error`

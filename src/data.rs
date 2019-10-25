@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use std::sync::{Arc, Mutex};
 
 use crate::config::{get_config, Config};
-use crate::error::{Error, ErrorKind};
+use crate::error::Error;
 use crate::model::{error_product, Product};
 
 use reqwest;
@@ -44,14 +44,14 @@ fn get_csv(cfg: &Config) -> Result<String, Error> {
             file.read_to_string(&mut s)?;
             Ok(s)
         } else {
-            Err(From::from(ErrorKind::Other("No file?".into())))
+            Err(Error::Other("No file?".into()))
         }
     } else {
         if let Some(url) = &cfg.file {
             let data = fetch_data(url, &cfg)?;
             Ok(data)
         } else {
-            Err(From::from(ErrorKind::Other("No URL?".into())))
+            Err(Error::Other("No URL?".into()))
         }
     }
 }
@@ -92,16 +92,11 @@ pub fn fetch_data(url: &str, cfg: &Config) -> Result<String, Error> {
                     .get(url)
                     .basic_auth(username, Some(password))
             } else {
-                return Err(From::from(ErrorKind::Other(
-                    "Need password for Basic Auth".into(),
-                )));
+                return Err(Error::Other("Need password for Basic Auth".into()));
             }
-        },
-        None => reqwest::Client::new()
-            .get(url)
+        }
+        None => reqwest::Client::new().get(url),
     };
-    let resp = client
-        .send()?
-        .text()?;
+    let resp = client.send()?.text()?;
     Ok(resp)
 }

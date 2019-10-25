@@ -1,7 +1,7 @@
 use std::env;
 use std::path::Path;
 
-use crate::error::{Error, ErrorKind};
+use crate::error::Error;
 
 use dotenv;
 use structopt::StructOpt;
@@ -88,9 +88,7 @@ pub fn get_config() -> Result<Config, Error> {
 
     // TODO can we move that validation to structopt somehow?
     if cfg.csv_username.is_some() && cfg.csv_password.is_none() {
-        return Err(From::from(ErrorKind::Other(
-            "Need password for Basic Auth".into(),
-        )));
+        return Err(Error::Other("Need password for Basic Auth".into()));
     }
     Ok(cfg)
 }

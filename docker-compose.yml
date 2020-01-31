@@ -16,7 +16,5 @@ services:
     - CSV_URL=${CSV_URL}
     - CSV_USERNAME=${CSV_USERNAME}
     - CSV_PASSWORD=${CSV_PASSWORD}
-    env_file:
-      .env
     ports:
     - "8000:8000"

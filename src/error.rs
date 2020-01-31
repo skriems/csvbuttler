@@ -7,6 +7,7 @@
 
 use std::{io, result};
 
+// use actix_web::{error::ResponseError, HttpResponse};
 use derive_more::Display;
 use reqwest;
 
@@ -14,34 +15,49 @@ pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug, Display)]
 pub enum Error {
+    #[display(fmt = "BadRequest: {}", _0)]
+    BadRequest(String),
+
+    #[display(fmt = "Internal Server Error")]
+    InternalServerError,
+
     Io(io::Error),
 
-    #[display(fmt = "Missing Environment Variable: {}", _0)]
-    VarError(std::env::VarError),
+    #[display(fmt = "Error: {}", _0)]
+    Other(String),
 
     #[display(fmt = "Reqwest Error: {}", _0)]
     Reqwest(reqwest::Error),
 
-    #[display(fmt = "Error: {}", _0)]
-    Other(String),
+    #[display(fmt = "Unauthorized")]
+    Unauthorized,
+
+    #[display(fmt = "Missing Environment Variable: {}", _0)]
+    VarError(std::env::VarError),
 }
 
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
+            Error::BadRequest(ref _str) => None,
+            Error::InternalServerError => None,
             Error::Io(ref e) => Some(e),
-            Error::VarError(ref e) => Some(e),
-            Error::Reqwest(ref e) => Some(e),
             Error::Other(ref _str) => None,
+            Error::Reqwest(ref e) => Some(e),
+            Error::Unauthorized => None,
+            Error::VarError(ref e) => Some(e),
         }
     }
 
     fn description(&self) -> &str {
         match *self {
+            Error::BadRequest(ref e) => &e,
+            Error::InternalServerError => "InternalServerError",
             Error::Io(ref e) => e.description(),
-            Error::VarError(ref e) => e.description(),
-            Error::Reqwest(ref e) => e.description(),
             Error::Other(ref e) => &e,
+            Error::Reqwest(ref e) => e.description(),
+            Error::Unauthorized => "Unauthorized",
+            Error::VarError(ref e) => e.description(),
         }
     }
 
@@ -50,6 +66,19 @@ impl std::error::Error for Error {
         None
     }
 }
+
+// impl ResponseError trait allows to convert our errors into http responses with appropriate data
+// impl ResponseError for Error {
+//     fn error_response(&self) -> HttpResponse {
+//         match self {
+//             Error::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
+//             Error::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
+//             Error::InternalServerError => {
+//                 HttpResponse::InternalServerError().json("Internal Server Error, Please try later")
+//             }
+//         }
+//     }
+// }
 
 // From `std::env:VarError` to our `Error`
 impl From<std::env::VarError> for Error {

@@ -1,0 +1,22 @@
+version: "3"
+services:
+  varnish:
+    build:
+      context: .
+      dockerfile: Dockerfile-varnish
+    tmpfs: /var/lib/varnish:exec
+    ports:
+    - "8080:80"
+
+  csvbuttler:
+    build:
+      context: .
+      dockerfile: Dockerfile-musl
+    environment:
+    - CSV_URL=${CSV_URL}
+    - CSV_USERNAME=${CSV_USERNAME}
+    - CSV_PASSWORD=${CSV_PASSWORD}
+    env_file:
+      .env
+    ports:
+    - "8000:8000"

@@ -1,0 +1,85 @@
+FROM rust:1.36 as build
+
+# We want to build for target x68_64-unknown-musl which is statically linked and can hence run anywhere. This is needed to run it on Alpine later.
+
+# install build dependencies for debian
+RUN rustup target add x86_64-unknown-linux-musl
+RUN apt-get update -y && apt-get install -y musl-dev musl-tools libssl-dev
+
+#### START PASTE
+
+RUN export URL=http://security-cdn.debian.org/debian-security/pool/updates/main/o/openssl/libssl-dev_1.1.0k-1~deb9u1_amd64.deb &&\
+    curl -O $URL &&\
+    ar p $(basename $URL) data.tar.xz | tar xvJf -
+
+RUN export URL=http://security-cdn.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.0k-1~deb9u1_amd64.deb &&\
+    curl -O $URL &&\
+    ar p $(basename $URL) data.tar.xz | tar xvJf -
+
+RUN export URL=http://ftp.us.debian.org/debian/pool/main/g/glibc/libc6_2.24-11+deb9u4_amd64.deb &&\
+    curl -O $URL &&\
+    ar p $(basename $URL) data.tar.xz | tar xvJf -
+
+#### END PASTE
+
+# create empty project
+RUN USER=root cargo new --bin app
+WORKDIR /app
+
+# manifests
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
+
+# DELETE ME
+RUN cargo build
+
+### SET ENV
+# we have to specify which compiler to use
+ENV CC_x86_64_unknown_linux_musl=musl-gcc
+# musl-gcc needs to know where the OpenSSL header files are located
+ENV OPENSSL_DIR=/usr/include/x86_64-linux-gnu/openssl
+# ENV OPENSSL_DIR=/usr/include/x86_64-linux-gnu/openssl
+ENV OPENSSL_INCLUDE_DIR=/usr/include
+ENV OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu
+# needed if we have any C code compiled by a Rust build script
+ENV TARGET_CC=x86_64-linux-musl-gcc
+# allow cross compilation
+ENV PKG_CONFIG_ALLOW_CROSS=1
+
+### COMPILE
+# install and compile dependencies and cleanup boilerplate files
+RUN cargo build --release --target x86_64-unknown-linux-musl
+RUN rm src/*.rs
+
+# now copy over our source files
+COPY ./src ./src
+
+# build!
+RUN rm ./target/x86_64-unknown-linux-musl/release/deps/csvbuttler*
+# RUN cargo build --release
+RUN cargo build --release --target x86_64-unknown-linux-musl
+
+# final Alpine image
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates
+
+# create an unprivileged user
+RUN addgroup -g 1000 johndoe
+RUN adduser -D -s /bin/sh -u 1000 -G johndoe johndoe
+
+# expose port by default
+EXPOSE 8000
+
+# copy the build artifact from the build stage
+COPY --from=build /app/target/release/csvbuttler /usr/bin/
+# FIXME
+COPY ./skr_feed.csv feed.csv
+
+# change owner and run app as unprivileged user
+RUN chown johndoe:johndoe /usr/bin/csvbuttler
+USER johndoe
+
+# set the startup command to run your binary
+# CMD tail -f /dev/null
+# CMD ["csvbuttler", "-i 0.0.0.0", "-d ;"]
+CMD ./csvbuttler -f feed.csv -i 0.0.0.0 -d ";"

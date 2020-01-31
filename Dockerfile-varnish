@@ -1,0 +1,4 @@
+FROM varnish:latest
+ADD default.vcl /etc/varnish/
+
+# run docker run -d p 8080:80 --name varnish --tmpfs /var/lib/varnish:exec  my-varnish

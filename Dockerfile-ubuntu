@@ -1,0 +1,46 @@
+# Basic Image that creates a dynamically linked binary and hence,
+# cannot run on any system. Ubuntu is used here...
+#
+ARG BUILD_IMAGE=rust:1.36
+
+FROM ${BUILD_IMAGE} as build
+
+# create empty project
+RUN USER=root cargo new --bin app
+WORKDIR ./app
+
+# manifests
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
+
+# compile dev to get dependencies and cleanup boilerplate files
+RUN cargo build
+RUN rm src/*.rs
+
+# now copy over our source files
+COPY ./src ./src
+
+# build!
+RUN rm ./target/release/deps/csvbuttler*
+RUN cargo build --release
+
+# final image
+FROM ubuntu:latest
+
+RUN apt-get update -y && apt-get install -y libssl-dev ca-certificates
+# create an unprivileged user
+# RUN addgroup -g 1000 johndoe
+# RUN adduser -D -s /bin/sh -u 1000 -G johndoe johndoe
+
+# expose port by default
+EXPOSE 8000
+
+# copy the build artifact from the build stage
+COPY --from=build /app/target/release/csvbuttler .
+
+# change owner and run app as unprivileged user
+# RUN chown johndoe:johndoe csvbuttler
+# USER johndoe
+
+# set the startup command to run your binary
+CMD ./csvbuttler -i 0.0.0.0 -d ";"

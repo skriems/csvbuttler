@@ -1,0 +1,6 @@
+# config file for dev environment
+csv:
+  uri: https://staging.example.com/data.csv 
+  delimiter: ;
+  username: foo  # basic auth username
+  password: bar  # basic auth password

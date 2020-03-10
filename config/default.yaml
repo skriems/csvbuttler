@@ -1,0 +1,10 @@
+default:
+  alloworigin: "*"
+  interface: localhost
+  port: 8000
+  domain: localhost
+  https: false
+secrets:
+  app: "12345678912345678912345678912345"
+  csrf: "12345678912345678912345678912345"
+  jwt: "12345678912345678912345678912345"

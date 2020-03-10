@@ -4,9 +4,9 @@ use std::io;
 use std::io::prelude::*;
 use std::sync::{Arc, Mutex};
 
-use crate::config::{get_config, Config};
 use crate::error::Error;
 use crate::model::{error_product, Product};
+use crate::settings::Settings;
 
 use reqwest;
 
@@ -17,7 +17,7 @@ pub type StateType = Arc<Mutex<AppState>>;
 /// The `AppState` is constructed with the app configuration and the generated `HashMap` from the
 /// csv data.
 pub struct AppState {
-    pub cfg: Config,
+    pub settings: Settings,
     pub map: HashMap<usize, Product>,
 }
 
@@ -26,43 +26,35 @@ pub struct AppState {
 /// mutable references to the `Mutex` inside of the `Arc`.
 impl AppState {
     pub fn new() -> Result<StateType, Error> {
-        let cfg = get_config()?;
-        println!("{:?}", &cfg);
-        let csv = get_csv(&cfg)?;
-        let map = parse_csv(&cfg, csv)?;
+        let settings = Settings::new()?;
+        println!("{:?}", &settings);
+        let csv = get_csv(&settings)?;
+        let map = parse_csv(&settings, csv)?;
 
-        Ok(Arc::new(Mutex::new(AppState { cfg, map })))
+        Ok(Arc::new(Mutex::new(AppState { settings, map })))
     }
 }
 
 /// Retrieve the csv either from a local file, or try to fetch it, from an external service
-fn get_csv(cfg: &Config) -> Result<String, Error> {
-    if cfg.is_local() {
-        if let Some(filename) = &cfg.file {
-            let mut file = File::open(filename)?;
-            let mut s = String::new();
-            file.read_to_string(&mut s)?;
-            Ok(s)
-        } else {
-            Err(Error::Other("No file?".into()))
-        }
+fn get_csv(settings: &Settings) -> Result<String, Error> {
+    if settings.is_local() {
+        let mut file = File::open(&settings.csv.uri)?;
+        let mut s = String::new();
+        file.read_to_string(&mut s)?;
+        Ok(s)
     } else {
-        if let Some(url) = &cfg.file {
-            let data = fetch_data(url, &cfg)?;
-            Ok(data)
-        } else {
-            Err(Error::Other("No URL?".into()))
-        }
+        let data = fetch_data(&settings)?;
+        Ok(data)
     }
 }
 
 /// Parse the csv, deserializing it with `serde` based on the `Product` struct
-pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Product>> {
+pub fn parse_csv(settings: &Settings, data: String) -> io::Result<HashMap<usize, Product>> {
     let mut map = HashMap::new();
 
     let mut rdr = csv::ReaderBuilder::new()
         // FIXME this can panic if an empty string is provided as delimiter
-        .delimiter(cfg.delimiter.clone().into_bytes()[0])
+        .delimiter(settings.csv.delimiter.clone().into_bytes()[0])
         .from_reader(data.as_bytes());
 
     for result in rdr.deserialize() {
@@ -83,19 +75,19 @@ pub fn parse_csv(cfg: &Config, data: String) -> io::Result<HashMap<usize, Produc
 }
 
 /// Fetch csv data from an external service and return it as a `String`
-pub fn fetch_data(url: &str, cfg: &Config) -> Result<String, Error> {
-    println!("Fetching data from {}", &url);
-    let client = match &cfg.csv_username {
+pub fn fetch_data(settings: &Settings) -> Result<String, Error> {
+    println!("Fetching data from {}", settings.csv.uri);
+    let client = match &settings.csv.username {
         Some(username) => {
-            if let Some(password) = &cfg.csv_password {
+            if let Some(password) = &settings.csv.password {
                 reqwest::Client::new()
-                    .get(url)
+                    .get(&settings.csv.uri)
                     .basic_auth(username, Some(password))
             } else {
                 return Err(Error::Other("Need password for Basic Auth".into()));
             }
         }
-        None => reqwest::Client::new().get(url),
+        None => reqwest::Client::new().get(&settings.csv.uri),
     };
     let resp = client.send()?.text()?;
     Ok(resp)

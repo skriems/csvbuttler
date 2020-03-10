@@ -4,6 +4,7 @@ use std::process;
 use csvbuttler::data;
 use csvbuttler::handler;
 use csvbuttler::routes;
+use csvbuttler::settings::Settings;
 
 use actix_web::{middleware, web, App, HttpServer};
 use env_logger;
@@ -11,9 +12,8 @@ use listenfd::ListenFd;
 
 /// Utility funciton to build the server string based on the cli arguments.
 /// Defaults to: 127.0.0.1:8000
-fn build_server_str(state: &data::StateType) -> String {
-    let cfg = &state.lock().unwrap().cfg;
-    format!("{}:{}", &cfg.interface, &cfg.port)
+fn build_server_str(settings: &Settings) -> String {
+    format!("{}:{}", settings.default.interface, settings.default.port)
 }
 
 fn run() -> std::io::Result<()> {
@@ -24,8 +24,8 @@ fn run() -> std::io::Result<()> {
     let log_fmt = "%a '%r' %s %b '%{Referer}i' '%{User-Agent}i' %D";
 
     let state = data::AppState::new()?;
-
-    let server_str = build_server_str(&state);
+    let settings = Settings::new().map_err(error::Error::ConfigError)?;
+    let server_str = build_server_str(&settings);
 
     let mut listenfd = ListenFd::from_env();
     let mut server = HttpServer::new(move || {

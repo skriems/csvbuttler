@@ -5,9 +5,7 @@
 //!
 //! (not to say copy pasted :grin:)
 
-use std::{io, result};
-
-// use actix_web::{error::ResponseError, HttpResponse};
+use config;
 use derive_more::Display;
 use reqwest;
 
@@ -32,6 +30,9 @@ pub enum Error {
     #[display(fmt = "Unauthorized")]
     Unauthorized,
 
+    #[display(fmt = "ConfigError: {}", _0)]
+    ConfigError(config::ConfigError),
+
     #[display(fmt = "Missing Environment Variable: {}", _0)]
     VarError(std::env::VarError),
 }
@@ -40,6 +41,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
             Error::BadRequest(ref _str) => None,
+            Error::ConfigError(ref e) => Some(e),
             Error::InternalServerError => None,
             Error::Io(ref e) => Some(e),
             Error::Other(ref _str) => None,
@@ -52,6 +54,7 @@ impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::BadRequest(ref e) => &e,
+            Error::ConfigError(ref e) => e.description(),
             Error::InternalServerError => "InternalServerError",
             Error::Io(ref e) => e.description(),
             Error::Other(ref e) => &e,
@@ -84,6 +87,12 @@ impl std::error::Error for Error {
 impl From<std::env::VarError> for Error {
     fn from(e: std::env::VarError) -> Error {
         Error::VarError(e)
+    }
+}
+
+impl From<config::ConfigError> for Error {
+    fn from(e: config::ConfigError) -> Error {
+        Error::ConfigError(e)
     }
 }
 

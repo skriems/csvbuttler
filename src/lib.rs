@@ -5,3 +5,4 @@ pub mod handler;
 pub mod middleware;
 pub mod model;
 pub mod routes;
+pub mod settings;

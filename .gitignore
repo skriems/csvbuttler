@@ -3,3 +3,5 @@ build
 /target
 *.csv
 .env
+
+config/local.*

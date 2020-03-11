@@ -4,10 +4,11 @@
 //! and `https://doc.rust-lang.org/rust-by-example/error/multiple_error_types/wrap_error.html`
 //!
 //! (not to say copy pasted :grin:)
-
+use actix_web::{error::ResponseError, HttpResponse};
 use config;
 use derive_more::Display;
 use reqwest;
+use std::{io, result};
 
 pub type Result<T> = result::Result<T, Error>;
 
@@ -71,17 +72,17 @@ impl std::error::Error for Error {
 }
 
 // impl ResponseError trait allows to convert our errors into http responses with appropriate data
-// impl ResponseError for Error {
-//     fn error_response(&self) -> HttpResponse {
-//         match self {
-//             Error::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
-//             Error::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
-//             Error::InternalServerError => {
-//                 HttpResponse::InternalServerError().json("Internal Server Error, Please try later")
-//             }
-//         }
-//     }
-// }
+impl ResponseError for Error {
+    fn error_response(&self) -> HttpResponse {
+        match self {
+            Error::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
+            Error::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
+            _ => {
+                HttpResponse::InternalServerError().json("Internal Server Error, Please try later")
+            }
+        }
+    }
+}
 
 // From `std::env:VarError` to our `Error`
 impl From<std::env::VarError> for Error {

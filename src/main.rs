@@ -2,11 +2,16 @@ use std::env;
 use std::process;
 
 use csvbuttler::data;
+use csvbuttler::error;
 use csvbuttler::handler;
 use csvbuttler::routes;
 use csvbuttler::settings::Settings;
 
-use actix_web::{middleware, web, App, HttpServer};
+use actix_identity::{CookieIdentityPolicy, IdentityService};
+use actix_web::middleware::{Compress, DefaultHeaders, Logger};
+use actix_web::{web, App, HttpServer};
+use chrono::Duration;
+use csrf_token::CsrfTokenGenerator;
 use env_logger;
 use listenfd::ListenFd;
 
@@ -20,9 +25,7 @@ fn run() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "actix_web=trace");
     env::set_var("RUST_BACKTRACE", "1"); // TODO set in dev
     env_logger::init();
-
     let log_fmt = "%a '%r' %s %b '%{Referer}i' '%{User-Agent}i' %D";
-
     let state = data::AppState::new()?;
     let settings = Settings::new().map_err(error::Error::ConfigError)?;
     let server_str = build_server_str(&settings);
@@ -32,14 +35,34 @@ fn run() -> std::io::Result<()> {
         App::new()
             // getting a reference to the data
             .data(state.clone())
+            .data(CsrfTokenGenerator::new(
+                settings.secrets.csrf.clone().as_bytes().to_vec(),
+                Duration::hours(1),
+            ))
             // configure logging
-            .wrap(middleware::Logger::new(log_fmt))
+            .wrap(Logger::new(log_fmt))
             // enable compression if requested via headers
-            .wrap(middleware::Compress::default())
+            .wrap(Compress::default())
+            .wrap(IdentityService::new(
+                CookieIdentityPolicy::new(&settings.secrets.app.as_bytes())
+                    .domain(&settings.default.domain)
+                    .name("jwt_token")
+                    .path("/")
+                    .max_age(Duration::days(1).num_seconds())
+                    .secure(settings.default.https),
+            ))
             // this is our root handler
             .route("/", web::get().to(handler::index))
-            // configure the rest of the app
-            .configure(routes::config)
+            .service(
+                web::scope("/products")
+                    .wrap(DefaultHeaders::new().header("Cache-Control", "max-age=3600"))
+                    .configure(routes::config),
+            )
+            .service(
+                web::resource("/auth")
+                    .route(web::post().to(handler::login))
+                    .route(web::delete().to(handler::logout)),
+            )
     });
 
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
